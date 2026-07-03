@@ -9,8 +9,44 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TripSummaryRouteImport } from './routes/trip-summary'
+import { Route as ScanRouteImport } from './routes/scan'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PassengersRouteImport } from './routes/passengers'
+import { Route as MoreRouteImport } from './routes/more'
+import { Route as BoardingRouteImport } from './routes/boarding'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TripSummaryRoute = TripSummaryRouteImport.update({
+  id: '/trip-summary',
+  path: '/trip-summary',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanRoute = ScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PassengersRoute = PassengersRouteImport.update({
+  id: '/passengers',
+  path: '/passengers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MoreRoute = MoreRouteImport.update({
+  id: '/more',
+  path: '/more',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoardingRoute = BoardingRouteImport.update({
+  id: '/boarding',
+  path: '/boarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +55,116 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/boarding': typeof BoardingRoute
+  '/more': typeof MoreRoute
+  '/passengers': typeof PassengersRoute
+  '/profile': typeof ProfileRoute
+  '/scan': typeof ScanRoute
+  '/trip-summary': typeof TripSummaryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/boarding': typeof BoardingRoute
+  '/more': typeof MoreRoute
+  '/passengers': typeof PassengersRoute
+  '/profile': typeof ProfileRoute
+  '/scan': typeof ScanRoute
+  '/trip-summary': typeof TripSummaryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/boarding': typeof BoardingRoute
+  '/more': typeof MoreRoute
+  '/passengers': typeof PassengersRoute
+  '/profile': typeof ProfileRoute
+  '/scan': typeof ScanRoute
+  '/trip-summary': typeof TripSummaryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/boarding'
+    | '/more'
+    | '/passengers'
+    | '/profile'
+    | '/scan'
+    | '/trip-summary'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/boarding'
+    | '/more'
+    | '/passengers'
+    | '/profile'
+    | '/scan'
+    | '/trip-summary'
+  id:
+    | '__root__'
+    | '/'
+    | '/boarding'
+    | '/more'
+    | '/passengers'
+    | '/profile'
+    | '/scan'
+    | '/trip-summary'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BoardingRoute: typeof BoardingRoute
+  MoreRoute: typeof MoreRoute
+  PassengersRoute: typeof PassengersRoute
+  ProfileRoute: typeof ProfileRoute
+  ScanRoute: typeof ScanRoute
+  TripSummaryRoute: typeof TripSummaryRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/trip-summary': {
+      id: '/trip-summary'
+      path: '/trip-summary'
+      fullPath: '/trip-summary'
+      preLoaderRoute: typeof TripSummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan': {
+      id: '/scan'
+      path: '/scan'
+      fullPath: '/scan'
+      preLoaderRoute: typeof ScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/passengers': {
+      id: '/passengers'
+      path: '/passengers'
+      fullPath: '/passengers'
+      preLoaderRoute: typeof PassengersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/more': {
+      id: '/more'
+      path: '/more'
+      fullPath: '/more'
+      preLoaderRoute: typeof MoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boarding': {
+      id: '/boarding'
+      path: '/boarding'
+      fullPath: '/boarding'
+      preLoaderRoute: typeof BoardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +177,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BoardingRoute: BoardingRoute,
+  MoreRoute: MoreRoute,
+  PassengersRoute: PassengersRoute,
+  ProfileRoute: ProfileRoute,
+  ScanRoute: ScanRoute,
+  TripSummaryRoute: TripSummaryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
