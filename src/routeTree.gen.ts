@@ -14,6 +14,7 @@ import { Route as ScanRouteImport } from './routes/scan'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PassengersRouteImport } from './routes/passengers'
 import { Route as MoreRouteImport } from './routes/more'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as BoardingRouteImport } from './routes/boarding'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -42,6 +43,11 @@ const MoreRoute = MoreRouteImport.update({
   path: '/more',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BoardingRoute = BoardingRouteImport.update({
   id: '/boarding',
   path: '/boarding',
@@ -56,6 +62,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/boarding': typeof BoardingRoute
+  '/login': typeof LoginRoute
   '/more': typeof MoreRoute
   '/passengers': typeof PassengersRoute
   '/profile': typeof ProfileRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/boarding': typeof BoardingRoute
+  '/login': typeof LoginRoute
   '/more': typeof MoreRoute
   '/passengers': typeof PassengersRoute
   '/profile': typeof ProfileRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/boarding': typeof BoardingRoute
+  '/login': typeof LoginRoute
   '/more': typeof MoreRoute
   '/passengers': typeof PassengersRoute
   '/profile': typeof ProfileRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/boarding'
+    | '/login'
     | '/more'
     | '/passengers'
     | '/profile'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/boarding'
+    | '/login'
     | '/more'
     | '/passengers'
     | '/profile'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/boarding'
+    | '/login'
     | '/more'
     | '/passengers'
     | '/profile'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BoardingRoute: typeof BoardingRoute
+  LoginRoute: typeof LoginRoute
   MoreRoute: typeof MoreRoute
   PassengersRoute: typeof PassengersRoute
   ProfileRoute: typeof ProfileRoute
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MoreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/boarding': {
       id: '/boarding'
       path: '/boarding'
@@ -178,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BoardingRoute: BoardingRoute,
+  LoginRoute: LoginRoute,
   MoreRoute: MoreRoute,
   PassengersRoute: PassengersRoute,
   ProfileRoute: ProfileRoute,
