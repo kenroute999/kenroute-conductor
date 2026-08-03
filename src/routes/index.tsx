@@ -14,15 +14,36 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import logo from "@/assets/kenroute-logo.png";
+import { AuthGate } from "@/components/AuthGate";
 import { BottomNav } from "@/components/BottomNav";
-import { CONDUCTOR, TRIP_INFO, useTripStats } from "@/lib/trip-store";
+import { SyncBadge } from "@/components/SyncBadge";
+import { useSession } from "@/lib/session";
+import { useActiveTrip, useTripLoading, useTripStats, useTrips } from "@/lib/trip-store";
 
 export const Route = createFileRoute("/")({
-  component: ConductorDashboard,
+  head: () => ({
+    meta: [
+      { title: "My Trips — KenRoute Conductor" },
+      { name: "description", content: "Your assigned trip, boarding counts and quick actions." },
+      { property: "og:title", content: "My Trips — KenRoute Conductor" },
+      { property: "og:description", content: "Your assigned trip, boarding counts and quick actions." },
+    ],
+  }),
+  component: () => (
+    <AuthGate>
+      <ConductorDashboard />
+    </AuthGate>
+  ),
 });
 
 function ConductorDashboard() {
+  const { session } = useSession();
+  const conductor = session!.conductor;
   const stats = useTripStats();
+  const trip = useActiveTrip();
+  const trips = useTrips();
+  const loading = useTripLoading();
+  const completed = trips.filter((t) => t.status === "completed");
 
   return (
     <div className="min-h-screen bg-background flex justify-center">
@@ -49,55 +70,71 @@ function ConductorDashboard() {
 
           <div className="mt-6">
             <h1 className="text-2xl font-bold">
-              Hello, <span className="text-brand-green">{CONDUCTOR.name}</span>
+              Hello, <span className="text-brand-green">{conductor.name}</span>
             </h1>
-            <p className="text-sm text-white/70 mt-1">Conductor ID: {CONDUCTOR.id}</p>
+            <p className="text-sm text-white/70 mt-1">Conductor ID: {conductor.id}</p>
           </div>
         </header>
 
         <main className="px-4 -mt-10 space-y-5">
-          <section className="bg-card rounded-2xl shadow-card p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-brand-green font-bold text-sm tracking-wide">
-                <Bus className="h-5 w-5" />
-                CURRENT TRIP
+          {trip ? (
+            <section className="bg-card rounded-2xl shadow-card p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-brand-green font-bold text-sm tracking-wide">
+                  <Bus className="h-5 w-5" />
+                  CURRENT TRIP
+                </div>
+                <span className="text-xs font-semibold text-brand-green bg-brand-green-soft px-3 py-1 rounded-full">
+                  ON TRIP
+                </span>
               </div>
-              <span className="text-xs font-semibold text-brand-green bg-brand-green-soft px-3 py-1 rounded-full">
-                ON TRIP
-              </span>
-            </div>
 
-            <div className="mt-4 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 text-3xl font-black text-foreground">
-                  <span>{TRIP_INFO.from}</span>
-                  <ArrowRight className="h-6 w-6 text-brand-green" />
-                  <span>{TRIP_INFO.to}</span>
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-3xl font-black text-foreground">
+                    <span>{trip.from}</span>
+                    <ArrowRight className="h-6 w-6 text-brand-green" />
+                    <span>{trip.to}</span>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1.5">
+                    {trip.fromFull} <ArrowRight className="h-3 w-3" /> {trip.toFull}
+                  </div>
                 </div>
-                <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1.5">
-                  {TRIP_INFO.fromFull} <ArrowRight className="h-3 w-3" /> {TRIP_INFO.toFull}
+                <div className="text-right shrink-0">
+                  <div className="h-10 w-14 rounded-md bg-brand-green-soft grid place-items-center">
+                    <Bus className="h-6 w-6 text-brand-green" />
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-1">Bus No.</div>
+                  <div className="text-xs font-bold">{trip.busNo}</div>
                 </div>
               </div>
-              <div className="text-right shrink-0">
-                <div className="h-10 w-14 rounded-md bg-brand-green-soft grid place-items-center">
-                  <Bus className="h-6 w-6 text-brand-green" />
-                </div>
-                <div className="text-[10px] text-muted-foreground mt-1">Bus No.</div>
-                <div className="text-xs font-bold">{TRIP_INFO.busNo}</div>
-              </div>
-            </div>
 
-            <div className="mt-5 pt-4 border-t border-border grid grid-cols-3 gap-2">
-              <Stat icon={<Users className="h-5 w-5 text-brand-green" />} label="Total" value={stats.total} />
-              <Stat
-                icon={<CheckCircle2 className="h-5 w-5 text-action-blue" />}
-                label="Boarded"
-                value={stats.boarded}
-                divider
-              />
-              <Stat icon={<Clock className="h-5 w-5 text-action-orange" />} label="Pending" value={stats.pending} />
-            </div>
-          </section>
+              <div className="mt-4 flex justify-end">
+                <SyncBadge />
+              </div>
+
+              <div className="mt-3 pt-4 border-t border-border grid grid-cols-3 gap-2">
+                <Stat icon={<Users className="h-5 w-5 text-brand-green" />} label="Total" value={stats.total} />
+                <Stat
+                  icon={<CheckCircle2 className="h-5 w-5 text-action-blue" />}
+                  label="Boarded"
+                  value={stats.boarded}
+                  divider
+                />
+                <Stat icon={<Clock className="h-5 w-5 text-action-orange" />} label="Pending" value={stats.pending} />
+              </div>
+            </section>
+          ) : (
+            <section className="bg-card rounded-2xl shadow-card p-5 text-center">
+              <Bus className="h-8 w-8 mx-auto text-muted-foreground" />
+              <div className="mt-2 font-bold">
+                {loading ? "Loading your trips…" : "No active trip"}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {loading ? "Please wait." : "You'll see your next assigned trip here."}
+              </p>
+            </section>
+          )}
 
           <section>
             <h2 className="text-xs font-bold tracking-widest text-foreground/70 mb-3 px-1">
@@ -111,22 +148,53 @@ function ConductorDashboard() {
             </div>
           </section>
 
-          <section className="bg-card rounded-2xl shadow-card p-4 grid grid-cols-2">
-            <div className="flex items-center gap-3">
-              <Armchair className="h-8 w-8 text-brand-green" />
-              <div>
-                <div className="text-xs text-muted-foreground">Available Seats</div>
-                <div className="text-2xl font-black">{stats.available}</div>
+          {trip && (
+            <section className="bg-card rounded-2xl shadow-card p-4 grid grid-cols-2">
+              <div className="flex items-center gap-3">
+                <Armchair className="h-8 w-8 text-brand-green" />
+                <div>
+                  <div className="text-xs text-muted-foreground">Available Seats</div>
+                  <div className="text-2xl font-black">{stats.available}</div>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3 border-l border-border pl-4">
-              <PieChart className="h-8 w-8 text-brand-green" />
-              <div>
-                <div className="text-xs text-muted-foreground">Occupancy</div>
-                <div className="text-2xl font-black">{stats.occupancy}%</div>
+              <div className="flex items-center gap-3 border-l border-border pl-4">
+                <PieChart className="h-8 w-8 text-brand-green" />
+                <div>
+                  <div className="text-xs text-muted-foreground">Occupancy</div>
+                  <div className="text-2xl font-black">{stats.occupancy}%</div>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
+
+          {completed.length > 0 && (
+            <section>
+              <h2 className="text-xs font-bold tracking-widest text-foreground/70 mb-3 px-1">
+                COMPLETED TRIPS
+              </h2>
+              <ul className="space-y-2">
+                {completed.map((t) => (
+                  <li
+                    key={t.id}
+                    className="bg-card rounded-xl shadow-card p-3 flex items-center gap-3"
+                  >
+                    <div className="h-10 w-10 rounded-lg bg-muted grid place-items-center">
+                      <CheckCircle2 className="h-5 w-5 text-brand-green" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-sm">
+                        {t.from} → {t.to}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {t.date} · Ended {t.endedAt ?? "—"}
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-bold text-muted-foreground">COMPLETED</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </main>
 
         <BottomNav />
