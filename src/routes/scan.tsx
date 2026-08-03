@@ -1,18 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { QrCode, Ticket, CheckCircle2, XCircle, Zap } from "lucide-react";
+import { QrCode, Ticket, CheckCircle2, XCircle, Zap, Lock } from "lucide-react";
+import { AuthGate } from "@/components/AuthGate";
 import { BottomNav } from "@/components/BottomNav";
 import { PageHeader } from "@/components/PageHeader";
-import { tripStore, usePassengers } from "@/lib/trip-store";
+import { SyncBadge } from "@/components/SyncBadge";
+import { tripStore, useActiveTrip, usePassengers } from "@/lib/trip-store";
 
 export const Route = createFileRoute("/scan")({
   head: () => ({
     meta: [
       { title: "Scan Ticket — KenRoute Conductor" },
       { name: "description", content: "Scan or enter a ticket code to board a passenger instantly." },
+      { property: "og:title", content: "Scan Ticket — KenRoute Conductor" },
+      { property: "og:description", content: "Scan or enter a ticket code to board a passenger instantly." },
     ],
   }),
-  component: ScanPage,
+  component: () => (
+    <AuthGate>
+      <ScanPage />
+    </AuthGate>
+  ),
 });
 
 function ScanPage() {
@@ -23,6 +31,8 @@ function ScanPage() {
     | null
   >(null);
   const passengers = usePassengers();
+  const trip = useActiveTrip();
+  const locked = !trip;
 
   const submit = (raw?: string) => {
     const value = (raw ?? code).trim();
@@ -41,107 +51,123 @@ function ScanPage() {
   return (
     <div className="min-h-screen bg-background flex justify-center">
       <div className="w-full max-w-md pb-28">
-        <PageHeader title="Scan Ticket" subtitle="Board passenger instantly" />
+        <PageHeader
+          title="Scan Ticket"
+          subtitle={locked ? "Trip completed" : "Board passenger instantly"}
+        />
 
         <main className="px-4 -mt-4 space-y-5">
-          {/* Scanner viewport */}
-          <div className="bg-card rounded-2xl shadow-card p-5">
-            <div className="aspect-square rounded-xl bg-navy relative overflow-hidden grid place-items-center">
-              <div className="absolute inset-6 border-2 border-brand-green rounded-2xl">
-                <span className="absolute -top-1 -left-1 h-6 w-6 border-t-4 border-l-4 border-white rounded-tl-xl" />
-                <span className="absolute -top-1 -right-1 h-6 w-6 border-t-4 border-r-4 border-white rounded-tr-xl" />
-                <span className="absolute -bottom-1 -left-1 h-6 w-6 border-b-4 border-l-4 border-white rounded-bl-xl" />
-                <span className="absolute -bottom-1 -right-1 h-6 w-6 border-b-4 border-r-4 border-white rounded-br-xl" />
-                <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-brand-green/80 shadow-[0_0_12px] shadow-brand-green animate-pulse" />
-              </div>
-              <QrCode className="h-24 w-24 text-white/20" />
+          {locked ? (
+            <div className="bg-card rounded-2xl shadow-card p-6 text-center">
+              <Lock className="h-7 w-7 mx-auto text-muted-foreground" />
+              <div className="mt-2 font-bold">Scanning disabled</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                There is no active trip assigned to you right now.
+              </p>
             </div>
-            <p className="text-center text-xs text-muted-foreground mt-3">
-              Point camera at ticket QR code
-            </p>
-          </div>
-
-          {/* Manual entry */}
-          <div className="bg-card rounded-2xl shadow-card p-4">
-            <label className="text-xs font-bold tracking-widest text-foreground/70">
-              OR ENTER TICKET CODE
-            </label>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                submit();
-              }}
-              className="mt-2 flex gap-2"
-            >
-              <div className="flex-1 flex items-center gap-2 bg-secondary rounded-xl px-3">
-                <Ticket className="h-5 w-5 text-muted-foreground shrink-0" />
-                <input
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. TKT004"
-                  className="flex-1 min-w-0 bg-transparent py-3 text-base font-bold tracking-wider outline-none"
-                />
-              </div>
-              <button
-                type="submit"
-                className="bg-brand-green text-white font-bold px-5 rounded-xl active:scale-95 transition"
-              >
-                Board
-              </button>
-            </form>
-
-            {result && (
-              <div
-                className={`mt-3 rounded-xl p-3 flex items-start gap-2 ${
-                  result.kind === "ok"
-                    ? "bg-brand-green-soft text-foreground"
-                    : "bg-destructive/10 text-destructive"
-                }`}
-              >
-                {result.kind === "ok" ? (
-                  <CheckCircle2 className="h-5 w-5 text-brand-green shrink-0 mt-0.5" />
-                ) : (
-                  <XCircle className="h-5 w-5 shrink-0 mt-0.5" />
-                )}
-                <div className="text-sm">
-                  {result.kind === "ok" ? (
-                    <>
-                      <div className="font-bold">Boarded: {result.name}</div>
-                      <div className="text-xs text-muted-foreground">Seat {result.seat}</div>
-                    </>
-                  ) : (
-                    result.message
-                  )}
+          ) : (
+            <>
+              {/* Scanner viewport */}
+              <div className="bg-card rounded-2xl shadow-card p-5">
+                <div className="aspect-square rounded-xl bg-navy relative overflow-hidden grid place-items-center">
+                  <div className="absolute inset-6 border-2 border-brand-green rounded-2xl">
+                    <span className="absolute -top-1 -left-1 h-6 w-6 border-t-4 border-l-4 border-white rounded-tl-xl" />
+                    <span className="absolute -top-1 -right-1 h-6 w-6 border-t-4 border-r-4 border-white rounded-tr-xl" />
+                    <span className="absolute -bottom-1 -left-1 h-6 w-6 border-b-4 border-l-4 border-white rounded-bl-xl" />
+                    <span className="absolute -bottom-1 -right-1 h-6 w-6 border-b-4 border-r-4 border-white rounded-br-xl" />
+                    <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-brand-green/80 shadow-[0_0_12px] shadow-brand-green animate-pulse" />
+                  </div>
+                  <QrCode className="h-24 w-24 text-white/20" />
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">Point camera at ticket QR code</p>
+                  <SyncBadge />
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Quick board pending */}
-          {pending.length > 0 && (
-            <div>
-              <h2 className="text-xs font-bold tracking-widest text-foreground/70 mb-2 px-1 flex items-center gap-1.5">
-                <Zap className="h-3.5 w-3.5" /> QUICK BOARD PENDING
-              </h2>
-              <div className="space-y-2">
-                {pending.map((p) => (
+              {/* Manual entry */}
+              <div className="bg-card rounded-2xl shadow-card p-4">
+                <label className="text-xs font-bold tracking-widest text-foreground/70">
+                  OR ENTER TICKET CODE
+                </label>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    submit();
+                  }}
+                  className="mt-2 flex gap-2"
+                >
+                  <div className="flex-1 flex items-center gap-2 bg-secondary rounded-xl px-3">
+                    <Ticket className="h-5 w-5 text-muted-foreground shrink-0" />
+                    <input
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.toUpperCase())}
+                      placeholder="e.g. TKT004"
+                      className="flex-1 min-w-0 bg-transparent py-3 text-base font-bold tracking-wider outline-none"
+                    />
+                  </div>
                   <button
-                    key={p.id}
-                    onClick={() => submit(p.ticketCode)}
-                    className="w-full bg-card rounded-xl shadow-card p-3 flex items-center gap-3 active:scale-[0.99] transition"
+                    type="submit"
+                    className="bg-brand-green text-white font-bold px-5 rounded-xl active:scale-95 transition"
                   >
-                    <div className="h-10 w-10 rounded-lg bg-brand-green-soft grid place-items-center font-bold text-brand-green">
-                      {p.seat}
-                    </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="font-semibold truncate">{p.name}</div>
-                      <div className="text-xs text-muted-foreground">{p.ticketCode}</div>
-                    </div>
-                    <span className="text-xs font-bold text-brand-green">TAP TO BOARD</span>
+                    Board
                   </button>
-                ))}
+                </form>
+
+                {result && (
+                  <div
+                    className={`mt-3 rounded-xl p-3 flex items-start gap-2 ${
+                      result.kind === "ok"
+                        ? "bg-brand-green-soft text-foreground"
+                        : "bg-destructive/10 text-destructive"
+                    }`}
+                  >
+                    {result.kind === "ok" ? (
+                      <CheckCircle2 className="h-5 w-5 text-brand-green shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                    )}
+                    <div className="text-sm">
+                      {result.kind === "ok" ? (
+                        <>
+                          <div className="font-bold">Boarded: {result.name}</div>
+                          <div className="text-xs text-muted-foreground">Seat {result.seat}</div>
+                        </>
+                      ) : (
+                        result.message
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+
+              {/* Quick board pending */}
+              {pending.length > 0 && (
+                <div>
+                  <h2 className="text-xs font-bold tracking-widest text-foreground/70 mb-2 px-1 flex items-center gap-1.5">
+                    <Zap className="h-3.5 w-3.5" /> QUICK BOARD PENDING
+                  </h2>
+                  <div className="space-y-2">
+                    {pending.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => submit(p.ticketCode)}
+                        className="w-full bg-card rounded-xl shadow-card p-3 flex items-center gap-3 active:scale-[0.99] transition"
+                      >
+                        <div className="h-10 w-10 rounded-lg bg-brand-green-soft grid place-items-center font-bold text-brand-green">
+                          {p.seat}
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="font-semibold truncate">{p.name}</div>
+                          <div className="text-xs text-muted-foreground">{p.ticketCode}</div>
+                        </div>
+                        <span className="text-xs font-bold text-brand-green">TAP TO BOARD</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </main>
 

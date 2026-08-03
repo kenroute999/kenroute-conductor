@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, CheckCircle2, Clock, Phone } from "lucide-react";
+import { Search, CheckCircle2, Clock, Phone, Lock } from "lucide-react";
+import { AuthGate } from "@/components/AuthGate";
 import { BottomNav } from "@/components/BottomNav";
 import { PageHeader } from "@/components/PageHeader";
-import { tripStore, usePassengers, useTripStats } from "@/lib/trip-store";
+import { SyncBadge } from "@/components/SyncBadge";
+import { tripStore, useActiveTrip, usePassengers, useTripStats } from "@/lib/trip-store";
 
 type Filter = "all" | "boarded" | "pending";
 
@@ -12,14 +14,22 @@ export const Route = createFileRoute("/passengers")({
     meta: [
       { title: "Passenger List — KenRoute Conductor" },
       { name: "description", content: "Total, boarded and pending passengers for the current trip." },
+      { property: "og:title", content: "Passenger List — KenRoute Conductor" },
+      { property: "og:description", content: "Total, boarded and pending passengers for the current trip." },
     ],
   }),
-  component: PassengersPage,
+  component: () => (
+    <AuthGate>
+      <PassengersPage />
+    </AuthGate>
+  ),
 });
 
 function PassengersPage() {
   const stats = useTripStats();
   const passengers = usePassengers();
+  const trip = useActiveTrip();
+  const locked = !trip;
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
 
@@ -34,96 +44,113 @@ function PassengersPage() {
   return (
     <div className="min-h-screen bg-background flex justify-center">
       <div className="w-full max-w-md pb-28">
-        <PageHeader title="Passenger List" subtitle="Tap to view or board" />
+        <PageHeader
+          title="Passenger List"
+          subtitle={trip ? `${trip.from} → ${trip.to}` : "No active trip"}
+        />
 
         <main className="px-4 -mt-4 space-y-4">
-          <div className="grid grid-cols-3 gap-2">
-            <StatChip
-              active={filter === "all"}
-              onClick={() => setFilter("all")}
-              label="Total"
-              value={stats.total}
-              color="text-foreground"
-            />
-            <StatChip
-              active={filter === "boarded"}
-              onClick={() => setFilter("boarded")}
-              label="Boarded"
-              value={stats.boarded}
-              color="text-brand-green"
-            />
-            <StatChip
-              active={filter === "pending"}
-              onClick={() => setFilter("pending")}
-              label="Pending"
-              value={stats.pending}
-              color="text-action-orange"
-            />
-          </div>
+          {locked ? (
+            <div className="bg-card rounded-2xl shadow-card p-6 text-center">
+              <Lock className="h-7 w-7 mx-auto text-muted-foreground" />
+              <div className="mt-2 font-bold">No active trip</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Passenger lists appear when a trip is assigned and running.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-end">
+                <SyncBadge />
+              </div>
 
-          <div className="flex items-center gap-2 bg-card rounded-xl shadow-card px-3">
-            <Search className="h-5 w-5 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search name, seat or ticket"
-              className="flex-1 min-w-0 bg-transparent py-3 text-sm outline-none"
-            />
-          </div>
+              <div className="grid grid-cols-3 gap-2">
+                <StatChip
+                  active={filter === "all"}
+                  onClick={() => setFilter("all")}
+                  label="Total"
+                  value={stats.total}
+                  color="text-foreground"
+                />
+                <StatChip
+                  active={filter === "boarded"}
+                  onClick={() => setFilter("boarded")}
+                  label="Boarded"
+                  value={stats.boarded}
+                  color="text-brand-green"
+                />
+                <StatChip
+                  active={filter === "pending"}
+                  onClick={() => setFilter("pending")}
+                  label="Pending"
+                  value={stats.pending}
+                  color="text-action-orange"
+                />
+              </div>
 
-          <ul className="space-y-2">
-            {filtered.map((p) => (
-              <li key={p.id}>
-                <details className="bg-card rounded-xl shadow-card group">
-                  <summary className="list-none cursor-pointer p-3 flex items-center gap-3">
-                    <div
-                      className={`h-11 w-11 rounded-lg grid place-items-center font-bold shrink-0 ${
-                        p.boarded ? "bg-brand-green text-white" : "bg-muted text-foreground"
-                      }`}
-                    >
-                      {p.seat}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold truncate">{p.name}</div>
-                      <div className="text-xs text-muted-foreground">{p.ticketCode}</div>
-                    </div>
-                    {p.boarded ? (
-                      <span className="text-xs font-bold text-brand-green flex items-center gap-1">
-                        <CheckCircle2 className="h-4 w-4" /> Boarded
-                      </span>
-                    ) : (
-                      <span className="text-xs font-bold text-action-orange flex items-center gap-1">
-                        <Clock className="h-4 w-4" /> Pending
-                      </span>
-                    )}
-                  </summary>
-                  <div className="px-3 pb-3 pt-1 border-t border-border mt-1 flex items-center justify-between">
-                    <a
-                      href={`tel:${p.phone.replace(/\s/g, "")}`}
-                      className="text-sm text-muted-foreground flex items-center gap-1.5"
-                    >
-                      <Phone className="h-4 w-4" /> {p.phone}
-                    </a>
-                    <button
-                      onClick={() => tripStore.toggleBoarded(p.id)}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-lg ${
-                        p.boarded
-                          ? "bg-muted text-foreground"
-                          : "bg-brand-green text-white"
-                      }`}
-                    >
-                      {p.boarded ? "Undo" : "Mark Boarded"}
-                    </button>
-                  </div>
-                </details>
-              </li>
-            ))}
-            {filtered.length === 0 && (
-              <li className="text-center text-sm text-muted-foreground py-8">
-                No passengers match.
-              </li>
-            )}
-          </ul>
+              <div className="flex items-center gap-2 bg-card rounded-xl shadow-card px-3">
+                <Search className="h-5 w-5 text-muted-foreground" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search name, seat or ticket"
+                  className="flex-1 min-w-0 bg-transparent py-3 text-sm outline-none"
+                />
+              </div>
+
+              <ul className="space-y-2">
+                {filtered.map((p) => (
+                  <li key={p.id}>
+                    <details className="bg-card rounded-xl shadow-card group">
+                      <summary className="list-none cursor-pointer p-3 flex items-center gap-3">
+                        <div
+                          className={`h-11 w-11 rounded-lg grid place-items-center font-bold shrink-0 ${
+                            p.boarded ? "bg-brand-green text-white" : "bg-muted text-foreground"
+                          }`}
+                        >
+                          {p.seat}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold truncate">{p.name}</div>
+                          <div className="text-xs text-muted-foreground">{p.ticketCode}</div>
+                        </div>
+                        {p.boarded ? (
+                          <span className="text-xs font-bold text-brand-green flex items-center gap-1">
+                            <CheckCircle2 className="h-4 w-4" /> Boarded
+                          </span>
+                        ) : (
+                          <span className="text-xs font-bold text-action-orange flex items-center gap-1">
+                            <Clock className="h-4 w-4" /> Pending
+                          </span>
+                        )}
+                      </summary>
+                      <div className="px-3 pb-3 pt-1 border-t border-border mt-1 flex items-center justify-between">
+                        <a
+                          href={`tel:${p.phone.replace(/\s/g, "")}`}
+                          className="text-sm text-muted-foreground flex items-center gap-1.5"
+                        >
+                          <Phone className="h-4 w-4" /> {p.phone}
+                        </a>
+                        <button
+                          onClick={() => tripStore.toggleBoarded(p.id)}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-lg ${
+                            p.boarded ? "bg-muted text-foreground" : "bg-brand-green text-white"
+                          }`}
+                        >
+                          {p.boarded ? "Undo" : "Mark Boarded"}
+                        </button>
+                      </div>
+                    </details>
+                  </li>
+                ))}
+                {filtered.length === 0 && (
+                  <li className="text-center text-sm text-muted-foreground py-8">
+                    No passengers match.
+                  </li>
+                )}
+              </ul>
+            </>
+          )}
         </main>
 
         <BottomNav />
