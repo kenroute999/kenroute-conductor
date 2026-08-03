@@ -24,7 +24,9 @@ function hydrate() {
 }
 
 type Snapshot = { session: Session | null; hydrated: boolean };
-let snapshot: Snapshot = { session: null, hydrated: false };
+const SERVER_SNAPSHOT: Snapshot = { session: null, hydrated: false };
+let snapshot: Snapshot = SERVER_SNAPSHOT;
+
 
 function refresh() {
   snapshot = { session, hydrated };
