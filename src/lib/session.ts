@@ -44,8 +44,9 @@ export const sessionStore = {
     return snapshot;
   },
   getServerSnapshot(): Snapshot {
-    return { session: null, hydrated: false };
+    return SERVER_SNAPSHOT;
   },
+
   async login(conductorId: string, password: string) {
     const next = await api.login(conductorId, password);
     session = next;
