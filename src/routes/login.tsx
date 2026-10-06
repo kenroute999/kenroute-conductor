@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { IdCard, KeyRound, Loader2, LogIn } from "lucide-react";
+import { KeyRound, Loader2, LogIn, Phone } from "lucide-react";
 import logo from "@/assets/kenroute-logo.png";
 import { sessionStore, useSession } from "@/lib/session";
 
@@ -8,17 +8,17 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Conductor Login — KenRoute" },
-      { name: "description", content: "Sign in with your KenRoute conductor ID and PIN." },
+      { name: "description", content: "Sign in with your mobile number and password." },
       { property: "og:title", content: "Conductor Login — KenRoute" },
-      { property: "og:description", content: "Sign in with your KenRoute conductor ID and PIN." },
+      { property: "og:description", content: "Sign in with your mobile number and password." },
     ],
   }),
   component: LoginPage,
 });
 
 function LoginPage() {
-  const [id, setId] = useState("");
-  const [pin, setPin] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { session, hydrated } = useSession();
@@ -33,7 +33,7 @@ function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      await sessionStore.login(id, pin);
+      await sessionStore.login(mobile, password);
       navigate({ to: "/", replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -62,35 +62,48 @@ function LoginPage() {
             <h1 className="text-lg font-bold">Conductor Login</h1>
 
             <div>
-              <label className="text-[11px] font-bold tracking-widest text-muted-foreground">
-                CONDUCTOR ID
+              <label
+                htmlFor="mobile"
+                className="text-[11px] font-bold tracking-widest text-muted-foreground"
+              >
+                MOBILE NUMBER
               </label>
               <div className="mt-1 flex items-center gap-2 bg-secondary rounded-xl px-3">
-                <IdCard className="h-5 w-5 text-muted-foreground" />
+                <Phone className="h-5 w-5 text-muted-foreground" />
                 <input
-                  value={id}
-                  onChange={(e) => setId(e.target.value.toUpperCase())}
-                  placeholder="COND1258"
+                  id="mobile"
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="10-digit mobile number"
                   autoComplete="username"
+                  required
+                  pattern="[6-9][0-9]{9}"
+                  title="Enter your 10-digit mobile number"
                   className="flex-1 min-w-0 bg-transparent py-3 font-bold tracking-wider outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-[11px] font-bold tracking-widest text-muted-foreground">
-                PIN
+              <label
+                htmlFor="password"
+                className="text-[11px] font-bold tracking-widest text-muted-foreground"
+              >
+                PASSWORD
               </label>
               <div className="mt-1 flex items-center gap-2 bg-secondary rounded-xl px-3">
                 <KeyRound className="h-5 w-5 text-muted-foreground" />
                 <input
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   type="password"
-                  inputMode="numeric"
-                  placeholder="••••"
+                  placeholder="Password"
                   autoComplete="current-password"
-                  className="flex-1 min-w-0 bg-transparent py-3 font-bold tracking-widest outline-none"
+                  required
+                  className="flex-1 min-w-0 bg-transparent py-3 font-bold outline-none"
                 />
               </div>
             </div>
@@ -111,7 +124,7 @@ function LoginPage() {
             </button>
 
             <p className="text-[11px] text-muted-foreground text-center">
-              Demo credentials: COND1258 / 1258 &nbsp;·&nbsp; COND2041 / 2041
+              Your operator gives you this mobile number login and password.
             </p>
           </form>
         </main>

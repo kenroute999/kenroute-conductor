@@ -46,7 +46,7 @@ function ProfilePage() {
             </div>
             <h2 className="mt-3 text-xl font-bold">{conductor.fullName}</h2>
             <div className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-1">
-              <IdCard className="h-3.5 w-3.5" /> {conductor.id}
+              <IdCard className="h-3.5 w-3.5" /> {conductor.phone}
             </div>
             <div className="mt-3 inline-flex items-center gap-1.5 bg-brand-green-soft text-brand-green text-xs font-bold px-3 py-1 rounded-full">
               <span className="h-1.5 w-1.5 rounded-full bg-brand-green" /> Active Conductor

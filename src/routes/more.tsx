@@ -61,7 +61,7 @@ function MorePage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-bold truncate">{conductor.fullName}</div>
-              <div className="text-xs text-muted-foreground">ID: {conductor.id}</div>
+              <div className="text-xs text-muted-foreground">Mobile: {conductor.phone}</div>
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </Link>
