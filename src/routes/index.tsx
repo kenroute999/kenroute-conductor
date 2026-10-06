@@ -72,7 +72,7 @@ function ConductorDashboard() {
             <h1 className="text-2xl font-bold">
               Hello, <span className="text-brand-green">{conductor.name}</span>
             </h1>
-            <p className="text-sm text-white/70 mt-1">Conductor ID: {conductor.id}</p>
+            <p className="text-sm text-white/70 mt-1">Mobile: {conductor.phone}</p>
           </div>
         </header>
 

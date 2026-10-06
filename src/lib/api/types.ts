@@ -51,12 +51,15 @@ export type BoardingEvent = {
 };
 
 export type Session = {
+  /** Short-lived access token sent with every request. */
   token: string;
+  /** Exchanged for a new token pair when the access token expires. */
+  refreshToken?: string;
   conductor: Conductor;
 };
 
 export type KenRouteApi = {
-  login(conductorId: string, password: string): Promise<Session>;
+  login(mobile: string, password: string): Promise<Session>;
   getTrips(conductorId: string): Promise<Trip[]>;
   getPassengers(tripId: string): Promise<Passenger[]>;
   /** Replays queued boarding events. Rejects when the network is unavailable. */
