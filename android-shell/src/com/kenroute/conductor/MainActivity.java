@@ -103,11 +103,12 @@ public class MainActivity extends Activity {
                 runOnUiThread(() -> applyTracking(on));
             }
 
-            // Where LocationService reports positions to, and the trip key it reports with.
+            // The trip key LocationService reports positions with. The page only hands over
+            // the key: where positions are sent is fixed in LocationService, so no web page
+            // shown in this app can point the phone's GPS at another server.
             @JavascriptInterface
-            public void setUpload(String url, String token) {
-                getSharedPreferences(LocationService.PREFS, MODE_PRIVATE)
-                        .edit().putString("url", url).putString("token", token).apply();
+            public void setUpload(String token) {
+                getSharedPreferences(LocationService.PREFS, MODE_PRIVATE).edit().putString("token", token).apply();
             }
         }, "KenRouteNative");
 

@@ -53,6 +53,7 @@ const TRIPS: Trip[] = [
     date: "Today",
     capacity: 48,
     status: "on_trip",
+    startedAt: null,
     endedAt: null,
   },
   {
@@ -68,6 +69,7 @@ const TRIPS: Trip[] = [
     date: "Yesterday",
     capacity: 48,
     status: "completed",
+    startedAt: "22:00",
     endedAt: "07:05",
   },
   {
@@ -83,6 +85,7 @@ const TRIPS: Trip[] = [
     date: "Today",
     capacity: 40,
     status: "on_trip",
+    startedAt: null,
     endedAt: null,
   },
 ];
@@ -155,6 +158,14 @@ export const mockApi: KenRouteApi = {
       const p = list.find((x) => x.id === e.passengerId);
       if (p) p.boarded = e.boarded;
     }
+  },
+
+  async startTrip(tripId) {
+    await delay(300);
+    const trip = TRIPS.find((t) => t.id === tripId);
+    if (!trip) throw new Error("Trip not found");
+    trip.startedAt ??= new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return { ...trip };
   },
 
   async endTrip(tripId, endedAt) {

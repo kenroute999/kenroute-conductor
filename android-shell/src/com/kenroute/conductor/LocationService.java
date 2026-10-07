@@ -7,7 +7,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.location.Location;
@@ -30,7 +29,7 @@ import java.util.TimeZone;
  * Keeps GPS running while a trip is active, also when the app is closed or the phone is locked.
  * Android only allows that from a foreground service, which must show a notification.
  *
- * Each position goes to the backend with a trip key the web page hands over (setUpload),
+ * Each position goes to the backend (FIX_URL) with a trip key the web page hands over (setUpload),
  * so reporting carries on while the page is asleep and its sign-in has timed out.
  *
  * ponytail: the key lasts 24 hours and is renewed whenever the app is opened; a position
@@ -42,6 +41,9 @@ public class LocationService extends Service implements LocationListener {
     private static final int NOTIFICATION_ID = 1;
     private static final long EVERY_MS = 15_000;
     static final String PREFS = "tracking";
+    // ponytail: the laptop's backend through `adb reverse`, like APP_URL in MainActivity.
+    // Change both to the https address once the backend is deployed.
+    private static final String FIX_URL = "http://localhost:5000/api/v1/tracking/fix";
 
     private boolean listening;
 
@@ -79,10 +81,8 @@ public class LocationService extends Service implements LocationListener {
     }
 
     private void upload(Location location) {
-        SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        final String url = prefs.getString("url", null);
-        final String token = prefs.getString("token", null);
-        if (url == null || token == null) return;
+        final String token = getSharedPreferences(PREFS, MODE_PRIVATE).getString("token", null);
+        if (token == null) return;
 
         SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
         iso.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -98,7 +98,7 @@ public class LocationService extends Service implements LocationListener {
         new Thread(() -> {
             HttpURLConnection http = null;
             try {
-                http = (HttpURLConnection) new URL(url).openConnection();
+                http = (HttpURLConnection) new URL(FIX_URL).openConnection();
                 http.setRequestMethod("POST");
                 http.setConnectTimeout(8000);
                 http.setReadTimeout(8000);

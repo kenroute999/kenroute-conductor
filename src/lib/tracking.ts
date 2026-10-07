@@ -1,12 +1,12 @@
-import { gpsKey, sendLocation, TRACKING_FIX_URL } from "./api/http-api";
+import { gpsKey, sendLocation } from "./api/http-api";
 
 declare global {
   interface Window {
     /** Present only inside the Android app (android-shell). */
     KenRouteNative?: {
       setTracking(on: boolean): void;
-      /** Where the phone's background GPS reports to, and the key it reports with. */
-      setUpload?(url: string, token: string): void;
+      /** The key the phone's background GPS reports with; where it reports is fixed in the app. */
+      setUpload?(token: string): void;
     };
   }
 }
@@ -32,7 +32,7 @@ export function trackTrip(tripId: string | null) {
     native.setTracking(Boolean(tripId));
     if (tripId && native.setUpload) {
       gpsKey(tripId)
-        .then((key) => native.setUpload?.(TRACKING_FIX_URL, key.token))
+        .then((key) => native.setUpload?.(key.token))
         .catch(() => {});
     }
     return;

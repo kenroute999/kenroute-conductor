@@ -12,13 +12,13 @@ import {
   ArrowRight,
   User,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import logo from "@/assets/kenroute-logo.png";
 import { AuthGate } from "@/components/AuthGate";
 import { BottomNav } from "@/components/BottomNav";
 import { SyncBadge } from "@/components/SyncBadge";
 import { useSession } from "@/lib/session";
-import { useActiveTrip, useTripLoading, useTripStats, useTrips } from "@/lib/trip-store";
+import { tripStore, useActiveTrip, useTripLoading, useTripStats, useTrips } from "@/lib/trip-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -44,6 +44,16 @@ function ConductorDashboard() {
   const trips = useTrips();
   const loading = useTripLoading();
   const completed = trips.filter((t) => t.status === "completed");
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+
+  const startTrip = async () => {
+    setStarting(true);
+    setStartError(null);
+    const result = await tripStore.startTrip();
+    setStarting(false);
+    if (!result.ok) setStartError(result.message);
+  };
 
   return (
     <div className="min-h-screen bg-background flex justify-center">
@@ -85,7 +95,7 @@ function ConductorDashboard() {
                   CURRENT TRIP
                 </div>
                 <span className="text-xs font-semibold text-brand-green bg-brand-green-soft px-3 py-1 rounded-full">
-                  ON TRIP
+                  {trip.startedAt ? `ON TRIP · ${trip.startedAt}` : "NOT STARTED"}
                 </span>
               </div>
 
@@ -112,6 +122,20 @@ function ConductorDashboard() {
               <div className="mt-4 flex justify-end">
                 <SyncBadge />
               </div>
+
+              {/* Starting the trip is what puts the bus on the passengers' map. */}
+              {!trip.startedAt && (
+                <div className="mt-3">
+                  <button
+                    onClick={startTrip}
+                    disabled={starting}
+                    className="w-full bg-brand-green text-white font-bold rounded-2xl py-3.5 shadow-card active:scale-[0.99] transition disabled:opacity-60"
+                  >
+                    {starting ? "Starting…" : "Start Trip"}
+                  </button>
+                  {startError && <p className="mt-2 text-xs text-destructive text-center">{startError}</p>}
+                </div>
+              )}
 
               <div className="mt-3 pt-4 border-t border-border grid grid-cols-3 gap-2">
                 <Stat icon={<Users className="h-5 w-5 text-brand-green" />} label="Total" value={stats.total} />
