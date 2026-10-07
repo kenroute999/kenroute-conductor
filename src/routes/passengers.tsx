@@ -13,9 +13,15 @@ export const Route = createFileRoute("/passengers")({
   head: () => ({
     meta: [
       { title: "Passenger List — KenRoute Conductor" },
-      { name: "description", content: "Total, boarded and pending passengers for the current trip." },
+      {
+        name: "description",
+        content: "Total, boarded and pending passengers for the current trip.",
+      },
       { property: "og:title", content: "Passenger List — KenRoute Conductor" },
-      { property: "og:description", content: "Total, boarded and pending passengers for the current trip." },
+      {
+        property: "og:description",
+        content: "Total, boarded and pending passengers for the current trip.",
+      },
     ],
   }),
   component: () => (
@@ -125,12 +131,16 @@ function PassengersPage() {
                         )}
                       </summary>
                       <div className="px-3 pb-3 pt-1 border-t border-border mt-1 flex items-center justify-between">
-                        <a
-                          href={`tel:${p.phone.replace(/\s/g, "")}`}
-                          className="text-sm text-muted-foreground flex items-center gap-1.5"
-                        >
-                          <Phone className="h-4 w-4" /> {p.phone}
-                        </a>
+                        {p.phone ? (
+                          <a
+                            href={`tel:${p.phone.replace(/\s/g, "")}`}
+                            className="text-sm text-muted-foreground flex items-center gap-1.5"
+                          >
+                            <Phone className="h-4 w-4" /> {p.phone}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No phone number</span>
+                        )}
                         <button
                           onClick={() => tripStore.toggleBoarded(p.id)}
                           className={`text-xs font-bold px-3 py-1.5 rounded-lg ${
