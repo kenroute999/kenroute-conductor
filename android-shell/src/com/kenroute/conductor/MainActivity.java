@@ -174,6 +174,8 @@ public class MainActivity extends Activity {
         Intent service = new Intent(this, LocationService.class);
         if (!on) {
             stopService(service);
+            // The trip is over or the conductor signed out: the key must not outlive it.
+            getSharedPreferences(LocationService.PREFS, MODE_PRIVATE).edit().remove("token").apply();
         } else if (has(Manifest.permission.ACCESS_FINE_LOCATION)) {
             if (Build.VERSION.SDK_INT >= 26) startForegroundService(service);
             else startService(service);
