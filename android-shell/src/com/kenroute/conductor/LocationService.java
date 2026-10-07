@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.location.Location;
@@ -16,23 +17,31 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * Keeps GPS running while a trip is active, also when the app is closed or the phone is locked.
  * Android only allows that from a foreground service, which must show a notification.
  *
- * ponytail: positions are read but not sent anywhere yet. Uploading belongs in
- * onLocationChanged once the backend has an endpoint for it (and a way for this service to
- * hold a login token while the web page is asleep).
+ * Each position goes to the backend with a trip key the web page hands over (setUpload),
+ * so reporting carries on while the page is asleep and its sign-in has timed out.
+ *
+ * ponytail: the key lasts 24 hours and is renewed whenever the app is opened; a position
+ * that fails to send is dropped, the next one replaces it.
  */
 public class LocationService extends Service implements LocationListener {
     static final String ACTION_STOP = "com.kenroute.conductor.STOP_TRACKING";
     private static final String CHANNEL = "trip";
     private static final int NOTIFICATION_ID = 1;
     private static final long EVERY_MS = 15_000;
+    static final String PREFS = "tracking";
 
     private boolean listening;
 
@@ -66,6 +75,46 @@ public class LocationService extends Service implements LocationListener {
     public void onLocationChanged(Location location) {
         String time = new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date(location.getTime()));
         getSystemService(NotificationManager.class).notify(NOTIFICATION_ID, buildNotification("Last GPS fix " + time));
+        upload(location);
+    }
+
+    private void upload(Location location) {
+        SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+        final String url = prefs.getString("url", null);
+        final String token = prefs.getString("token", null);
+        if (url == null || token == null) return;
+
+        SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+        iso.setTimeZone(TimeZone.getTimeZone("UTC"));
+        final String body = String.format(Locale.US,
+                "{\"latitude\":%.6f,\"longitude\":%.6f,\"accuracy\":%s,\"speed\":%s,\"heading\":%s,\"at\":\"%s\"}",
+                location.getLatitude(), location.getLongitude(),
+                location.hasAccuracy() ? String.format(Locale.US, "%.1f", location.getAccuracy()) : "null",
+                location.hasSpeed() ? String.format(Locale.US, "%.1f", location.getSpeed()) : "null",
+                location.hasBearing() ? String.format(Locale.US, "%.1f", location.getBearing()) : "null",
+                iso.format(new Date(location.getTime())));
+
+        // Network calls are not allowed on the main thread.
+        new Thread(() -> {
+            HttpURLConnection http = null;
+            try {
+                http = (HttpURLConnection) new URL(url).openConnection();
+                http.setRequestMethod("POST");
+                http.setConnectTimeout(8000);
+                http.setReadTimeout(8000);
+                http.setDoOutput(true);
+                http.setRequestProperty("Content-Type", "application/json");
+                http.setRequestProperty("Authorization", "Bearer " + token);
+                try (OutputStream out = http.getOutputStream()) {
+                    out.write(body.getBytes(StandardCharsets.UTF_8));
+                }
+                http.getResponseCode(); // sends the request; a refusal needs no handling here
+            } catch (Exception ignored) {
+                // No signal on the highway is normal.
+            } finally {
+                if (http != null) http.disconnect();
+            }
+        }).start();
     }
 
     private Notification buildNotification(String text) {

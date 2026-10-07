@@ -2,14 +2,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { useSession } from "@/lib/session";
+import { trackTrip } from "@/lib/tracking";
 import { tripStore, useActiveTrip } from "@/lib/trip-store";
-
-declare global {
-  interface Window {
-    /** Present only inside the Android app (android-shell). */
-    KenRouteNative?: { setTracking(on: boolean): void };
-  }
-}
 
 /**
  * Client-side conductor gate. Session lives in localStorage, so the check runs
@@ -27,14 +21,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
     if (session) void tripStore.load(session.conductor.id);
   }, [session]);
 
-  // Android app only: GPS runs in the background while a signed-in conductor has an active trip.
-  // ponytail: starts as soon as the trip is assigned, not at departure; tie it to a "start trip"
-  // step when one exists.
+  // The bus position is shared while a signed-in conductor has an active trip.
+  // ponytail: the phone starts reading GPS as soon as the trip is assigned; the server only
+  // accepts positions from an hour before departure. Tie it to a "start trip" step when one exists.
   const activeTrip = useActiveTrip();
-  const tripActive = Boolean(session && activeTrip);
+  const trackedTripId = session && activeTrip ? activeTrip.id : null;
   useEffect(() => {
-    window.KenRouteNative?.setTracking(tripActive);
-  }, [tripActive]);
+    trackTrip(trackedTripId);
+  }, [trackedTripId]);
 
   if (!hydrated || !session) {
     return (

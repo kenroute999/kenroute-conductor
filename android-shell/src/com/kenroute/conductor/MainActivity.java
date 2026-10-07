@@ -102,6 +102,13 @@ public class MainActivity extends Activity {
             public void setTracking(final boolean on) {
                 runOnUiThread(() -> applyTracking(on));
             }
+
+            // Where LocationService reports positions to, and the trip key it reports with.
+            @JavascriptInterface
+            public void setUpload(String url, String token) {
+                getSharedPreferences(LocationService.PREFS, MODE_PRIVATE)
+                        .edit().putString("url", url).putString("token", token).apply();
+            }
         }, "KenRouteNative");
 
         if (savedInstanceState == null) web.loadUrl(APP_URL);

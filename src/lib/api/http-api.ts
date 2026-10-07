@@ -81,6 +81,27 @@ async function call<T>(path: string, init: { method?: string; body?: unknown } =
   return (await res.json()) as T;
 }
 
+// ---------------------------------------------------------------- live tracking
+
+export interface LocationFix {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  speed: number | null;
+  heading: number | null;
+  at: string;
+}
+
+/** Where the bus is now; passengers see it on the tracking site. */
+export const sendLocation = (tripId: string, fix: LocationFix) =>
+  call<{ saved: boolean }>(`/conductor/trips/${tripId}/location`, { method: "POST", body: fix });
+
+/** A key the Android app's background GPS reports with, valid for this trip only. */
+export const gpsKey = (tripId: string) =>
+  call<{ token: string }>(`/conductor/trips/${tripId}/gps-key`, { method: "POST" });
+
+export const TRACKING_FIX_URL = `${BASE_URL}/tracking/fix`;
+
 const IST = "Asia/Kolkata";
 const clock = new Intl.DateTimeFormat("en-GB", {
   timeZone: IST,
