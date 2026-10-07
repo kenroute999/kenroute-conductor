@@ -2,7 +2,14 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { useSession } from "@/lib/session";
-import { tripStore } from "@/lib/trip-store";
+import { tripStore, useActiveTrip } from "@/lib/trip-store";
+
+declare global {
+  interface Window {
+    /** Present only inside the Android app (android-shell). */
+    KenRouteNative?: { setTracking(on: boolean): void };
+  }
+}
 
 /**
  * Client-side conductor gate. Session lives in localStorage, so the check runs
@@ -19,6 +26,15 @@ export function AuthGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (session) void tripStore.load(session.conductor.id);
   }, [session]);
+
+  // Android app only: GPS runs in the background while a signed-in conductor has an active trip.
+  // ponytail: starts as soon as the trip is assigned, not at departure; tie it to a "start trip"
+  // step when one exists.
+  const activeTrip = useActiveTrip();
+  const tripActive = Boolean(session && activeTrip);
+  useEffect(() => {
+    window.KenRouteNative?.setTracking(tripActive);
+  }, [tripActive]);
 
   if (!hydrated || !session) {
     return (
