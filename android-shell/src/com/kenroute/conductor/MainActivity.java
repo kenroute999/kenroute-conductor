@@ -56,7 +56,9 @@ public class MainActivity extends Activity {
                 String scheme = request.getUrl().getScheme();
                 if ("http".equals(scheme) || "https".equals(scheme)) return false;
                 try {
-                    startActivity(new Intent(Intent.ACTION_VIEW, request.getUrl()));
+                    // DIAL goes straight to the phone's dialer; VIEW would ask "Phone, Truecaller or Zoom?".
+                    String action = "tel".equals(scheme) ? Intent.ACTION_DIAL : Intent.ACTION_VIEW;
+                    startActivity(new Intent(action, request.getUrl()));
                 } catch (ActivityNotFoundException e) {
                     Toast.makeText(MainActivity.this, "No app on this phone can open that", Toast.LENGTH_SHORT).show();
                 }
