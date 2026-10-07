@@ -45,10 +45,28 @@ async function createQrReader(): Promise<QrReader> {
       };
     }
   ).BarcodeDetector;
-  if (Detector) {
+  if (!Detector) return createJsQrReader();
+  // The detector can exist and still fail (an in-app WebView without the Play Services
+  // barcode module), so the first failure switches to jsQR for good.
+  let fallback: Promise<QrReader> | null = null;
+  try {
     const detector = new Detector({ formats: ["qr_code"] });
-    return async (video) => (await detector.detect(video))[0]?.rawValue ?? null;
+    return async (video) => {
+      if (!fallback) {
+        try {
+          return (await detector.detect(video))[0]?.rawValue ?? null;
+        } catch {
+          fallback = createJsQrReader();
+        }
+      }
+      return (await fallback)(video);
+    };
+  } catch {
+    return createJsQrReader();
   }
+}
+
+async function createJsQrReader(): Promise<QrReader> {
   const { default: jsQR } = await import("jsqr");
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
