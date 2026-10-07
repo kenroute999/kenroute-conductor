@@ -2,8 +2,13 @@ package com.kenroute.conductor;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -22,9 +27,13 @@ import android.webkit.WebViewClient;
 public class MainActivity extends Activity {
     private static final String APP_URL = "http://localhost:3003";
     private static final int CAMERA_REQUEST = 1;
+    private static final int SETUP_REQUEST = 2;
 
     private WebView web;
     private PermissionRequest pendingCamera;
+    private int setupStep;
+    /** What the web page last asked for; applied again once location is allowed. */
+    private boolean wantTracking;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,11 +78,88 @@ public class MainActivity extends Activity {
             }
         });
 
+        // The page calls window.KenRouteNative.setTracking(true/false) as a trip starts and ends.
+        web.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public void setTracking(final boolean on) {
+                runOnUiThread(() -> applyTracking(on));
+            }
+        }, "KenRouteNative");
+
         if (savedInstanceState == null) web.loadUrl(APP_URL);
+        startSetup();
+    }
+
+    /** First open: say why, then let Android ask for notifications, location, and "all the time". */
+    private void startSetup() {
+        final SharedPreferences prefs = getPreferences(MODE_PRIVATE);
+        if (prefs.getBoolean("explained", false)) {
+            askNextPermission();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Allow location and notifications")
+                .setMessage("KenRoute shares the bus location with passengers during your trip, "
+                        + "also when this app is closed or the phone is locked.\n\n"
+                        + "On the next screens please choose:\n"
+                        + "1. Notifications: Allow\n"
+                        + "2. Location: While using the app\n"
+                        + "3. Location: Allow all the time\n\n"
+                        + "Location is only read while you have an active trip.")
+                .setCancelable(false)
+                .setPositiveButton("Continue", (dialog, which) -> {
+                    prefs.edit().putBoolean("explained", true).apply();
+                    askNextPermission();
+                })
+                .show();
+    }
+
+    // Android shows one permission screen at a time, and "all the time" may only be asked
+    // after normal location is allowed, so these run in order.
+    private void askNextPermission() {
+        while (setupStep < 3) {
+            int step = setupStep++;
+            if (step == 0 && Build.VERSION.SDK_INT >= 33 && !has(Manifest.permission.POST_NOTIFICATIONS)) {
+                requestPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, SETUP_REQUEST);
+                return;
+            }
+            if (step == 1 && !has(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                requestPermissions(
+                        new String[] {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                        SETUP_REQUEST);
+                return;
+            }
+            if (step == 2 && Build.VERSION.SDK_INT >= 29
+                    && has(Manifest.permission.ACCESS_FINE_LOCATION)
+                    && !has(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+                requestPermissions(new String[] {Manifest.permission.ACCESS_BACKGROUND_LOCATION}, SETUP_REQUEST);
+                return;
+            }
+        }
+        if (wantTracking) applyTracking(true);
+    }
+
+    private boolean has(String permission) {
+        return checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void applyTracking(boolean on) {
+        wantTracking = on;
+        Intent service = new Intent(this, LocationService.class);
+        if (!on) {
+            stopService(service);
+        } else if (has(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(service);
+            else startService(service);
+        }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        if (requestCode == SETUP_REQUEST) {
+            askNextPermission();
+            return;
+        }
         if (requestCode != CAMERA_REQUEST || pendingCamera == null) return;
         if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
             pendingCamera.grant(new String[] {PermissionRequest.RESOURCE_VIDEO_CAPTURE});

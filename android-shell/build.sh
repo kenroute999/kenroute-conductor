@@ -18,7 +18,7 @@ rm -rf "$OUT" && mkdir -p "$OUT/classes" "$OUT/dex"
 "$BT/aapt2" link -o "$OUT/base.apk" -I "$JAR" --manifest "$HERE/AndroidManifest.xml" \
   --min-sdk-version 24 --target-sdk-version 34 --version-code 1 --version-name 0.1 "$OUT/res.zip"
 
-javac -nowarn --release 11 -cp "$JAR" -d "$OUT/classes" "$HERE/src/com/kenroute/conductor/MainActivity.java"
+javac -nowarn --release 11 -cp "$JAR" -d "$OUT/classes" "$HERE"/src/com/kenroute/conductor/*.java
 "$BT/d8.bat" --lib "$JAR" --min-api 24 --output "$OUT/dex" "$OUT"/classes/com/kenroute/conductor/*.class
 (cd "$OUT/dex" && "$BT/aapt" add ../base.apk classes.dex >/dev/null)
 
