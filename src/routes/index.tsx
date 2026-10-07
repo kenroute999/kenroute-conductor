@@ -55,6 +55,18 @@ function ConductorDashboard() {
     if (!result.ok) setStartError(result.message);
   };
 
+  // Completing a trip cannot be undone, so the button asks once more before it acts.
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  const [ending, setEnding] = useState(false);
+  const completeTrip = async () => {
+    setEnding(true);
+    setStartError(null);
+    const result = await tripStore.endTrip();
+    setEnding(false);
+    setConfirmEnd(false);
+    if (!result.ok) setStartError(result.message);
+  };
+
   return (
     <div className="min-h-screen bg-background flex justify-center">
       <div className="w-full max-w-md relative pb-28">
@@ -133,9 +145,45 @@ function ConductorDashboard() {
                   >
                     {starting ? "Starting…" : "Start Trip"}
                   </button>
-                  {startError && <p className="mt-2 text-xs text-destructive text-center">{startError}</p>}
                 </div>
               )}
+
+              {/* Completing the trip takes the bus off the map and switches the phone's GPS off. */}
+              {trip.startedAt && (
+                <div className="mt-3">
+                  {confirmEnd ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setConfirmEnd(false)}
+                        disabled={ending}
+                        className="rounded-2xl py-3.5 font-bold border border-border bg-card"
+                      >
+                        Not yet
+                      </button>
+                      <button
+                        onClick={completeTrip}
+                        disabled={ending}
+                        className="rounded-2xl py-3.5 font-bold bg-destructive text-white disabled:opacity-60"
+                      >
+                        {ending ? "Completing…" : "Yes, complete"}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmEnd(true)}
+                      className="w-full bg-navy text-navy-foreground font-bold rounded-2xl py-3.5 shadow-card active:scale-[0.99] transition"
+                    >
+                      Trip Completed
+                    </button>
+                  )}
+                  {confirmEnd && (
+                    <p className="mt-2 text-xs text-muted-foreground text-center">
+                      Boarding will be locked and GPS will stop. This cannot be undone.
+                    </p>
+                  )}
+                </div>
+              )}
+              {startError && <p className="mt-2 text-xs text-destructive text-center">{startError}</p>}
 
               <div className="mt-3 pt-4 border-t border-border grid grid-cols-3 gap-2">
                 <Stat icon={<Users className="h-5 w-5 text-brand-green" />} label="Total" value={stats.total} />
