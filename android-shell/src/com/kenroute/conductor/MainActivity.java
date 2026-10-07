@@ -3,6 +3,7 @@ package com.kenroute.conductor;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -16,6 +17,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 /**
  * Thin Android shell around the conductor web app.
@@ -47,6 +49,20 @@ public class MainActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(false); // camera preview starts on its own
 
         web.setWebViewClient(new WebViewClient() {
+            // A WebView only opens web pages. Links like tel: (call a passenger) are handed to
+            // Android, which opens the phone's dialer with the number filled in.
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                String scheme = request.getUrl().getScheme();
+                if ("http".equals(scheme) || "https".equals(scheme)) return false;
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, request.getUrl()));
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(MainActivity.this, "No app on this phone can open that", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            }
+
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (!request.isForMainFrame()) return;

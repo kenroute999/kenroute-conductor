@@ -178,11 +178,19 @@ export const httpApi: KenRouteApi = {
         seat: string;
         pnr: string;
         boarded: boolean;
+        phone?: string | null;
       }[];
     }>(`/conductor/trips/${tripId}/passengers`);
-    // Conductors are not given passenger phone numbers. The ticket code is what the
-    // ticket's QR holds: PNR plus seat, unique for every passenger.
-    return items.map((p): Passenger => ({ ...p, phone: "", ticketCode: `${p.pnr}-${p.seat}` }));
+    // The backend does not send passenger phone numbers to conductors yet; the call link
+    // appears by itself once it does. The ticket code is what the ticket's QR holds: PNR
+    // plus seat, unique for every passenger.
+    return items.map(
+      (p): Passenger => ({
+        ...p,
+        phone: p.phone ?? "",
+        ticketCode: `${p.pnr}-${p.seat}`,
+      }),
+    );
   },
 
   async syncBoardingEvents(events: BoardingEvent[]) {
