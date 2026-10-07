@@ -28,6 +28,8 @@ export type Trip = {
   date: string;
   capacity: number;
   status: TripStatus;
+  /** Clock time the conductor started the trip; null until they do. */
+  startedAt: string | null;
   endedAt: string | null;
 };
 
@@ -64,5 +66,7 @@ export type KenRouteApi = {
   getPassengers(tripId: string): Promise<Passenger[]>;
   /** Replays queued boarding events. Rejects when the network is unavailable. */
   syncBoardingEvents(events: BoardingEvent[]): Promise<void>;
+  /** The bus is setting off: passengers start seeing it live on the map. */
+  startTrip(tripId: string): Promise<Trip>;
   endTrip(tripId: string, endedAt: string): Promise<Trip>;
 };

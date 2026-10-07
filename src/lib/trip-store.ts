@@ -185,6 +185,19 @@ export const tripStore = {
     }
   },
 
+  async startTrip() {
+    const tripId = state.activeTripId;
+    if (!tripId || tripStore.isLocked()) return { ok: false as const, message: "No active trip" };
+    if (!isConnected()) return { ok: false as const, message: "You're offline. Reconnect to start this trip." };
+    try {
+      const updated = await api.startTrip(tripId);
+      set({ trips: state.trips.map((t) => (t.id === tripId ? updated : t)) });
+      return { ok: true as const };
+    } catch (e) {
+      return { ok: false as const, message: e instanceof Error ? e.message : "Could not start trip" };
+    }
+  },
+
   async endTrip() {
     const tripId = state.activeTripId;
     if (!tripId || tripStore.isLocked()) return { ok: false as const, message: "No active trip" };

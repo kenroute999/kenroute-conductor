@@ -100,8 +100,6 @@ export const sendLocation = (tripId: string, fix: LocationFix) =>
 export const gpsKey = (tripId: string) =>
   call<{ token: string }>(`/conductor/trips/${tripId}/gps-key`, { method: "POST" });
 
-export const TRACKING_FIX_URL = `${BASE_URL}/tracking/fix`;
-
 const IST = "Asia/Kolkata";
 const clock = new Intl.DateTimeFormat("en-GB", {
   timeZone: IST,
@@ -130,6 +128,7 @@ type ApiTrip = {
   departureAt: string;
   arrivalAt: string;
   status: "SCHEDULED" | "BOARDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  startedAt: string | null;
   updatedAt: string;
   bus: { registrationNo: string };
   route: { origin: string; destination: string };
@@ -151,6 +150,7 @@ function toTrip(t: ApiTrip, conductorId: string): Trip {
     date: dayLabel(t.departureAt),
     capacity: t._count.seats,
     status: done ? "completed" : "on_trip",
+    startedAt: t.startedAt ? clock.format(new Date(t.startedAt)) : null,
     endedAt: done ? clock.format(new Date(t.updatedAt)) : null,
   };
 }
@@ -226,6 +226,12 @@ export const httpApi: KenRouteApi = {
         })),
       },
     });
+  },
+
+  async startTrip(tripId) {
+    const session = storedSession();
+    const trip = await call<ApiTrip>(`/conductor/trips/${tripId}/start`, { method: "POST" });
+    return toTrip(trip, session?.conductor.id ?? "");
   },
 
   async endTrip(tripId) {
