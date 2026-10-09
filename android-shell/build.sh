@@ -30,4 +30,13 @@ adb install -r "$OUT/kenroute-conductor.apk"
 # The shell loads the laptop's dev server and backend through the cable.
 adb reverse tcp:3003 tcp:3003
 adb reverse tcp:5000 tcp:5000
+# SERVER_URL=http://<laptop-ip>:3003 makes the app work over the shared Wi-Fi without the
+# cable: the address is written straight into the app's preferences (gone through the am
+# --es the first time only — am mangles values containing ://) and the app is relaunched.
+if [ -n "${SERVER_URL:-}" ]; then
+  adb shell run-as com.kenroute.conductor mkdir -p shared_prefs
+  adb shell run-as com.kenroute.conductor \
+    sh -c "echo '<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\" ?>' '<map>' '    <string name=\"server_url\">${SERVER_URL}</string>' '</map>' > shared_prefs/kenroute.server.xml"
+  adb shell am force-stop com.kenroute.conductor
+fi
 adb shell am start -n com.kenroute.conductor/.MainActivity

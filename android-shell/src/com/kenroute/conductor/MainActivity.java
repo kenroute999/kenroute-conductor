@@ -22,15 +22,23 @@ import android.widget.Toast;
 /**
  * Thin Android shell around the conductor web app.
  *
- * ponytail: loads the dev server through `adb reverse`, so it needs the USB cable and the
- * laptop. Once the backend and app are deployed, change APP_URL to the https address (and
- * drop usesCleartextTraffic from the manifest); nothing else here needs to change.
+ * By default it loads the dev server through `adb reverse`, which needs the USB cable.
+ * Pass --es server_url http://<laptop-ip>:3003 once to point it at the laptop over the
+ * shared Wi-Fi instead; the app remembers that address. Once the backend and app are
+ * deployed, change APP_URL to the https address (and drop usesCleartextTraffic from the
+ * manifest); nothing else here needs to change.
  */
 public class MainActivity extends Activity {
     private static final String APP_URL = "http://localhost:3003";
+    private static final String PREFS = "kenroute.server";
+    private static final String KEY_SERVER = "server_url";
     private static final int CAMERA_REQUEST = 1;
     private static final int SETUP_REQUEST = 2;
 
+    // Over USB the app loads localhost through `adb reverse`. On the same Wi-Fi the first
+    // launch (or build.sh) can pass --es server_url http://192.168.x.x:3003 and it is
+    // remembered here, so the cable is only needed to set the address.
+    private String appUrl;
     private WebView web;
     private PermissionRequest pendingCamera;
     private int setupStep;
@@ -71,8 +79,8 @@ public class MainActivity extends Activity {
                 view.loadData(
                         "<body style='font-family:sans-serif;padding:32px;text-align:center'>"
                                 + "<h2>Cannot reach KenRoute</h2>"
-                                + "<p>Connect the USB cable to the laptop and make sure the servers are running.</p>"
-                                + "<p><a href='" + APP_URL + "' style='font-size:20px'>Try again</a></p></body>",
+                                + "<p>Connect the laptop and phone to the same Wi-Fi (or plug in the USB cable) and make sure the servers are running.</p>"
+                                + "<p><a href='" + appUrl + "' style='font-size:20px'>Try again</a></p></body>",
                         "text/html", "utf-8");
             }
         });
@@ -112,7 +120,18 @@ public class MainActivity extends Activity {
             }
         }, "KenRouteNative");
 
-        if (savedInstanceState == null) web.loadUrl(APP_URL);
+        // A server URL given with --es server_url (e.g. this laptop's 192.168.x.x) is remembered
+        // so later launches work over Wi-Fi without the USB cable.
+        final SharedPreferences serverPrefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+        appUrl = serverPrefs.getString(KEY_SERVER, "");
+        if (appUrl.isEmpty()) appUrl = APP_URL;
+        String extra = getIntent().getStringExtra("server_url");
+        if (extra != null && !extra.trim().isEmpty()) {
+            appUrl = extra.trim();
+            serverPrefs.edit().putString(KEY_SERVER, appUrl).apply();
+        }
+
+        if (savedInstanceState == null) web.loadUrl(appUrl);
         startSetup();
     }
 

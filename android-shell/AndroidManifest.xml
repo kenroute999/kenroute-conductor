@@ -19,7 +19,8 @@
         android:label="KenRoute Conductor"
         android:icon="@drawable/ic_launcher"
         android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        android:debuggable="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -171,9 +171,9 @@ function ConductorDashboard() {
                   ) : (
                     <button
                       onClick={() => setConfirmEnd(true)}
-                      className="w-full bg-navy text-navy-foreground font-bold rounded-2xl py-3.5 shadow-card active:scale-[0.99] transition"
+                      className="w-full bg-destructive text-white font-bold rounded-2xl py-3.5 shadow-card active:scale-[0.99] transition"
                     >
-                      Trip Completed
+                      End Trip
                     </button>
                   )}
                   {confirmEnd && (

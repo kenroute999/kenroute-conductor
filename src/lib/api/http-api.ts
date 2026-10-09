@@ -5,7 +5,22 @@ import type { BoardingEvent, Conductor, KenRouteApi, Passenger, Session, Trip } 
 // the offline queue do not know which one they are talking to.
 // ---------------------------------------------------------------------------
 
-const BASE_URL: string = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
+const configured = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
+// When the app is opened from another machine, 127.0.0.1 in VITE_API_URL would
+// point at that machine, not this one — swap in the page's hostname instead.
+const BASE_URL: string = (() => {
+  if (!configured) return "";
+  try {
+    const url = new URL(configured, window.location.origin);
+    if (url.hostname === "127.0.0.1" || url.hostname === "localhost") {
+      const page = window.location.hostname;
+      if (page !== "127.0.0.1" && page !== "localhost") url.hostname = page;
+    }
+    return url.origin + url.pathname.replace(/\/+$/, "");
+  } catch {
+    return configured;
+  }
+})();
 // Must match the key in ../session.ts: this client renews the tokens stored there.
 const SESSION_KEY = "kenroute.session";
 
